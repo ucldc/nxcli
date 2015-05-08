@@ -3,7 +3,6 @@
 
 var fs = require('fs');
 var nuxeo = require('nuxeo');
-var walk = require('walk');
 
 var ArgumentParser = require('argparse').ArgumentParser;
 var parser = new ArgumentParser({
@@ -21,57 +20,31 @@ var up = subparsers.addParser('up', {
   addHelp: true,
   help: 'upload files to nuxeo'
 });
-up.addArgument( [ '-r', '--recursive' ], {
-  action: 'storeTrue',
-  help: 'copy directories recursively'
-});
 
 up.addArgument( [ '-f', '--force' ], {
   action: 'storeTrue',
   help: 're-upload even if file is already on nuxeo (otherwise skip)'
-});
-up.addArgument( [ '-p', '--create_directories' ], {
-  action: 'storeTrue',
-  help: 'like `-p` on `mkdir`'
 });
 
 up.addArgument( [ 'source_file' ], { nargs: '+' });
 up.addArgument( [ 'dest_file' ], { nargs: '1' });
 
 var args = parser.parseArgs();
-var dest = args.dest_file[0];
 
 if (args.subcommand_name === 'up') {
-  /* next; 
-     - see if `dest` exists in Nuxeo
-       ✓ exists, is it a directory?
-         ✓ loop through args.source_file, uploading to folder
-  */
+  var dest = args.dest_file[0];
+  // does `dest` exist on nuxeo?
+  // is `dest` Folderish in nuxeo?
   var uploads = args.source_file.map(function(source){
-    /* check if source is a file, or a directory
-    */
+    // check if source is a file, or a directory
     if (fs.lstatSync(source).isDirectory()) {
-      var files = [];
-      var walker = walk.walk(source, { followLinks: false });
-      walker.on('file', function(root, stat, next) {
-        console.log(root + '/' + stat.name);
-        files.push(root + '/' + stat.name);
-        next();
-      });
-      return(files);
+      console.warn(source + ' is a directory, skipping');
     } else {
       return([source, dest]);
     }
   });
-  /*
-         ☒ not a directory, warn and skip (unless `-f`)
-           check that source_file.length==1
-       ☒ does not exist, does its parent directory exist?
-         ✓ upload with specified name
-         ☒ parent dir does not exist, exit 1; prompt for `-p` create intermediate directories
-  */
   console.dir(uploads);
-}
+ }
 
 /* Copyright © 2015, Regents of the University of California
 
