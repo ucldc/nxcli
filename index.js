@@ -4,47 +4,53 @@
 var fs = require('fs');
 var nuxeo = require('nuxeo');
 
-var ArgumentParser = require('argparse').ArgumentParser;
-var parser = new ArgumentParser({
-  version: '0.0.1',
-  addHelp: true,
-  description: 'nuxeo command line helper',
-});
-
-var subparsers = parser.addSubparsers({
-  title:'subcommands',
-  dest:"subcommand_name"
-});
-
-var up = subparsers.addParser('up', {
-  addHelp: true,
-  help: 'upload files to nuxeo'
-});
-
-up.addArgument( [ '-f', '--force' ], {
-  action: 'storeTrue',
-  help: 're-upload even if file is already on nuxeo (otherwise skip)'
-});
-
-up.addArgument( [ 'source_file' ], { nargs: '+' });
-up.addArgument( [ 'dest_file' ], { nargs: '1' });
-
-var args = parser.parseArgs();
-
-if (args.subcommand_name === 'up') {
-  var dest = args.dest_file[0];
-  // does `dest` exist on nuxeo?
-  // is `dest` Folderish in nuxeo?
-  var uploads = args.source_file.map(function(source){
-    // check if source is a file, or a directory
-    if (fs.lstatSync(source).isDirectory()) {
-      console.warn(source + ' is a directory, skipping');
-    } else {
-      return([source, dest]);
-    }
+function main() {
+  var ArgumentParser = require('argparse').ArgumentParser;
+  var parser = new ArgumentParser({
+    version: '0.0.1',
+    addHelp: true,
+    description: 'nuxeo command line helper',
   });
-  console.dir(uploads);
- }
+
+  var subparsers = parser.addSubparsers({
+    title:'subcommands',
+    dest:"subcommand_name"
+  });
+
+  var up = subparsers.addParser('up', {
+    addHelp: true,
+    help: 'upload files to nuxeo'
+  });
+
+  up.addArgument( [ '-f', '--force' ], {
+    action: 'storeTrue',
+    help: 're-upload even if file is already on nuxeo (otherwise skip)'
+  });
+
+  up.addArgument( [ 'source_file' ], { nargs: '+' });
+  up.addArgument( [ 'dest_file' ], { nargs: '1' });
+
+  var args = parser.parseArgs();
+
+  if (args.subcommand_name === 'up') {
+    var dest = args.dest_file[0];
+    // does `dest` exist on nuxeo?
+    // is `dest` Folderish in nuxeo?
+    var uploads = args.source_file.map(function(source){
+      // check if source is a file, or a directory
+      if (fs.lstatSync(source).isDirectory()) {
+        console.warn(source + ' is a directory, skipping');
+      } else {
+        return([source, dest]);
+      }
+    });
+    console.dir(uploads);
+   }
+}
+
+if (require.main === module) {
+  main();
+}
 
 /* Copyright © 2015, Regents of the University of California
 
