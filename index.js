@@ -2,7 +2,11 @@
 'use strict';
 
 var fs = require('fs');
+var rest = require('nuxeo/node_modules/restler');
 var nuxeo = require('nuxeo');
+var path = require('path');
+var http = require('http');
+var url = require('url');
 
 function main() {
   var ArgumentParser = require('argparse').ArgumentParser;
@@ -17,35 +21,71 @@ function main() {
     dest:"subcommand_name"
   });
 
-  var up = subparsers.addParser('up', {
+  var up = subparsers.addParser('upfile', {
     addHelp: true,
     help: 'upload files to nuxeo'
   });
+  up.addArgument( [ 'source_file' ], { nargs: '1' });
+  var up_dest = up.addMutuallyExclusiveGroup('upDest', {
+    addHelp: true,
+    help: 'destination on nuxeo'
+  });
+  up_dest.addArgument([ '-dir', '--upload_folder' ], { action: 'store' });
+  up_dest.addArgument([ '-doc', '--upload_document' ], { action: 'store' });
 
   up.addArgument( [ '-f', '--force' ], {
     action: 'storeTrue',
     help: 're-upload even if file is already on nuxeo (otherwise skip)'
   });
 
-  up.addArgument( [ 'source_file' ], { nargs: '+' });
-  up.addArgument( [ 'dest_file' ], { nargs: '1' });
 
   var args = parser.parseArgs();
 
-  if (args.subcommand_name === 'up') {
-    var dest = args.dest_file[0];
-    // does `dest` exist on nuxeo?
-    // is `dest` Folderish in nuxeo?
-    var uploads = args.source_file.map(function(source){
-      // check if source is a file, or a directory
-      if (fs.lstatSync(source).isDirectory()) {
-        console.warn(source + ' is a directory, skipping');
+  var source = args.source_file[0];
+
+  var config = {};
+
+  if (process.env.NUXEO_TOKEN) {
+    config = {
+      auth: { method: 'token' },
+      headers: { 'X-Authentication-Token': process.env.NUXEO_TOKEN }
+    };
+  }
+
+  var client = new nuxeo.Client(config);
+
+  var stats = fs.statSync(source);
+  var file = rest.file(source, null, stats.size, null, null);
+
+  if (args.subcommand_name === 'upfile') {
+    if (args.upload_folder) {
+      var check_url = 'path' + args.upload_folder;
+      client.request(check_url).get(function(error, remote) {
+        if (error) { throw error; }
+        if (remote.facets.indexOf('Folderish') >= 0){
+          fileToDirectory(client, source, file, args.upload_folder);
+        }
+      });
+    } else {
+    }
+  }
+}
+
+var fileToDirectory = function fileToDirectory(client, source, file, upload_folder){
+  var uploader = client.operation('FileManager.Import')
+                       .context({ currentDocument: upload_folder })
+                       .uploader();
+  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+    uploader.execute({
+      path: path.basename(source)
+    }, function (error, data) {
+      if (error) {
+        console.log('uploadError', error);
       } else {
-        return([source, dest]);
+        console.log('upload', data);
       }
     });
-    console.dir(uploads);
-   }
+  });
 }
 
 if (require.main === module) {
