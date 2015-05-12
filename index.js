@@ -84,10 +84,30 @@ function main() {
           });
         }
       });
-    } else {
+    } else if(args.upload_document) {
+      var check_url = 'path' + args.upload_document;
+      var upload_folder = path.dirname(args.upload_document);
+      // change the filename
+      file.filename = path.basename(args.upload_document);
+      client.request(check_url).get(function(error, remote) {
+        if (error) {
+          if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+            fileToDirectory(client, source, file, upload_folder);
+          } else {
+            console.log(error);
+            throw error;
+          }
+        } else { // file is on the server
+          if (args.force) {
+            fileToDirectory(client, source, file, upload_folder);
+          } else {
+            console.log('file ' + check_url  + ' exists on nuxeo; use `-f` to force');
+          }
+        }
+      });
     }
-  }
-}
+  } // upfile subcommand
+} // main
 
 var fileToDirectory = function fileToDirectory(client, source, file, upload_folder){
   var uploader = client.operation('FileManager.Import')
