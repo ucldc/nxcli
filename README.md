@@ -18,5 +18,5 @@ needs a better package name
 
 ## notes on node
 
-`npm link .` is very helpful during development
-`npm install https://github.com/tingletech/nx/archive/master.tar.gz`
+ * `npm link .` is very helpful during development
+ * `npm install https://github.com/tingletech/nx/archive/master.tar.gz`
