@@ -82,7 +82,7 @@ function main() {
               console.log('file ' + check2_url  + ' exists on nuxeo; use `-f` to force');
             }
           });
-        }
+        } else { throw new Error('destination ' + check_url + ' is not Folderish'); }
       });
     } else if(args.upload_document) {
       var check_url = 'path' + args.upload_document;
