@@ -58,6 +58,8 @@ function main() {
   var file = rest.file(source, null, stats.size, null, null);
 
   if (args.subcommand_name === 'upfile') {
+    /* upfile -dir UPLOAD_FOLDER
+    */
     if (args.upload_folder) {
       var check_url = 'path' + args.upload_folder;
       // upload directory must exist
@@ -70,20 +72,26 @@ function main() {
           client.request(check2_url).get(function(error, remote) {
             if (error) {
               if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+                // does not exist; upload away
                 fileToDirectory(client, source, file, args.upload_folder);
               } else {
                 console.log(error);
                 throw error;
               }
-            }
-            if (args.force) {
-              fileToDirectory(client, source, file, args.upload_folder);
-            } else {
-              console.log('file ' + check2_url  + ' exists on nuxeo; use `-f` to force');
+            } else { // file is on the server
+              if (args.force) {
+                fileToDirectory(client, source, file, args.upload_folder);
+              } else {
+                console.log('file ' + check2_url  + ' exists on nuxeo; use `-f` to force');
+              }
             }
           });
-        } else { throw new Error('destination ' + check_url + ' is not Folderish'); }
+        } else { // not Folderish
+          throw new Error('destination ' + check_url + ' is not Folderish');
+        } 
       });
+    /* upfile -doc UPLOAD_DOCUMENT
+    */
     } else if(args.upload_document) {
       var check_url = 'path' + args.upload_document;
       var upload_folder = path.dirname(args.upload_document);
@@ -92,6 +100,7 @@ function main() {
       client.request(check_url).get(function(error, remote) {
         if (error) {
           if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+            // does not exist; upload away
             fileToDirectory(client, source, file, upload_folder);
           } else {
             console.log(error);
