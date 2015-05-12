@@ -60,10 +60,28 @@ function main() {
   if (args.subcommand_name === 'upfile') {
     if (args.upload_folder) {
       var check_url = 'path' + args.upload_folder;
+      // upload directory must exist
       client.request(check_url).get(function(error, remote) {
         if (error) { throw error; }
+        // upload directory must be Folderish
         if (remote.facets.indexOf('Folderish') >= 0){
-          fileToDirectory(client, source, file, args.upload_folder);
+          var check2_url = 'path' + args.upload_folder.replace(/\/$/, "") + '/' + file.filename;
+          // does the file already exist on nuxeo?
+          client.request(check2_url).get(function(error, remote) {
+            if (error) {
+              if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+                fileToDirectory(client, source, file, args.upload_folder);
+              } else {
+                console.log(error);
+                throw error;
+              }
+            }
+            if (args.force) {
+              fileToDirectory(client, source, file, args.upload_folder);
+            } else {
+              console.log('file ' + check2_url  + ' exists on nuxeo; use `-f` to force');
+            }
+          });
         }
       });
     } else {
