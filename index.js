@@ -11,9 +11,14 @@ var url = require('url');
 function main() {
   var ArgumentParser = require('argparse').ArgumentParser;
   var parser = new ArgumentParser({
-    version: '0.0.1',
+    version: '0.1.0',
     addHelp: true,
     description: 'nuxeo command line helper',
+  });
+
+  parser.addArgument( ['--config'], {
+    action: 'store', addHelp: true,
+    help: 'json or ini format rc file'
   });
 
   var subparsers = parser.addSubparsers({
@@ -38,28 +43,21 @@ function main() {
     help: 're-upload even if file is already on nuxeo (otherwise skip)'
   });
 
-
   var args = parser.parseArgs();
-
   var source = args.source_file[0];
 
-  var config = {};
+  var client = new nuxeo.Client(
+    require('rc')('nx', {}, args)
+  );
 
-  if (process.env.NUXEO_TOKEN) {
-    config = {
-      auth: { method: 'token' },
-      headers: { 'X-Authentication-Token': process.env.NUXEO_TOKEN }
-    };
-  }
-
-  var client = new nuxeo.Client(config);
-
-  var stats = fs.statSync(source);
-  var file = rest.file(source, null, stats.size, null, null);
-
+  /*
+   * upload a named file to a directory or full path on nuxeo
+   */
   if (args.subcommand_name === 'upfile') {
+    var stats = fs.statSync(source);
+    var file = rest.file(source, null, stats.size, null, null);
     /* upfile -dir UPLOAD_FOLDER
-    */
+       one of two mutually exclusive options  */
     if (args.upload_folder) {
       var check_url = 'path' + args.upload_folder;
       // upload directory must exist
