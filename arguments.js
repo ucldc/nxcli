@@ -21,21 +21,32 @@ exports.parser = function argparse() {
   });
 
   // nx upfile 
-  var up = subparsers.addParser('upfile', {
+  var upfile = subparsers.addParser('upfile', {
     addHelp: true,
     help: 'upload files to nuxeo'
   });
-  up.addArgument( [ 'source_file' ], { nargs: '1' });
-  var up_dest = up.addMutuallyExclusiveGroup('upDest', {
+  upfile.addArgument( [ 'source_file' ], { nargs: '1' });
+  var updest = upfile.addMutuallyExclusiveGroup('upDest', {
     addHelp: true,
     help: 'destination on nuxeo'
   });
-  up_dest.addArgument([ '-dir', '--upload_folder' ], { action: 'store' });
-  up_dest.addArgument([ '-doc', '--upload_document' ], { action: 'store' });
+  updest.addArgument([ '-dir', '--upload_folder' ], { action: 'store' });
+  updest.addArgument([ '-doc', '--upload_document' ], { action: 'store' });
 
-  up.addArgument( [ '-f', '--force' ], {
+  upfile.addArgument( [ '-f', '--force' ], {
     action: 'storeTrue',
     help: 're-upload even if file is already on nuxeo (otherwise skip)'
+  });
+
+  // nx mkdoc
+  var mkdoc = subparsers.addParser('mkdoc', {
+    addHelp: true,
+    help: 'create a (Folderish) Document in Nuxeo'
+  });
+  mkdoc.addArgument([ 'path' ], { nargs: '1' });
+  mkdoc.addArgument(['-t', '--type'], {
+    action: 'store',
+    required: true
   });
 
   return parser;
