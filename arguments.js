@@ -38,7 +38,6 @@ exports.getArgs = function getArgs() {
   });
   updest.addArgument([ '-dir', '--upload_folder' ], { action: 'store' });
   updest.addArgument([ '-doc', '--upload_document' ], { action: 'store' });
-
   upfile.addArgument( [ '-f', '--force' ], {
     action: 'storeTrue',
     help: 're-upload even if file is already on nuxeo (otherwise skip)'
@@ -49,11 +48,20 @@ exports.getArgs = function getArgs() {
     addHelp: true,
     help: 'create a (Folderish) Document in Nuxeo'
   });
-  mkdoc.addArgument([ 'path' ], { nargs: '1' });
+  mkdoc.addArgument([ 'path' ], {
+    nargs: '1',
+    help: 'path to new document on nuxeo'
+  });
   mkdoc.addArgument(['-t', '--type'], {
     action: 'store',
-    required: true
+    defaultValue: 'Folder',
+    help: 'Nuxeo Document Type (default: Folder)'
   });
+  mkdoc.addArgument( [ '-f', '--force' ], {
+    action: 'storeTrue',
+    help: 'create document even if it already exists (otherwise skip)'
+  });
+
 
   var args = parser.parseArgs();
 

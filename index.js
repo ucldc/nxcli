@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 'use strict';
-
 var fs = require('fs');
 var rest = require('nuxeo/node_modules/restler');
 var nuxeo = require('nuxeo');
@@ -9,6 +8,7 @@ var http = require('http');
 var url = require('url');
 
 function main() {
+
   // parse subcommand and command line arguments
   var args = require('./arguments.js').getArgs();
 
@@ -20,19 +20,19 @@ function main() {
     var source = args.source_file[0];
     var stats = fs.statSync(source);
     var file = rest.file(source, null, stats.size, null, null);
-    // one of two mutually exclusive options 
+    // uploading to a folder
     if (args.upload_folder) {
       uploadFileToFolder(client, args, source, file);
-    } else if(args.upload_document) {
+    }
+    // uploading to specific document name
+    else if(args.upload_document) {
       uploadFileToFile(client, args, source, file);
     }
   }
 
   // create a new empty document on the server
   else if (args.subcommand_name === 'mkdoc') {
-    var path = args.path[0];
-    console.log(args);
-
+    makeDocument(client, args);
   }
 
   // should not be possible
@@ -41,25 +41,31 @@ function main() {
   }
 }
 
+
 var uploadFileToFolder = function uploadFileToFolder(client, args, source, file){
-  var check_url = 'path' + args.upload_folder;
+
   // upload directory must exist
+  var check_url = 'path' + args.upload_folder;
   client.request(check_url).get(function(error, remote) {
     if (error) { throw error; }
+
     // upload directory must be Folderish
     if (remote.facets.indexOf('Folderish') >= 0){
-      var check2_url = 'path' + args.upload_folder.replace(/\/$/, "") + '/' + file.filename;
+
       // does the file already exist on nuxeo?
+      var check2_url = 'path' + args.upload_folder.replace(/\/$/, "") + '/' + file.filename;
       client.request(check2_url).get(function(error, remote) {
         if (error) {
           if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
-            // does not exist; upload away
+            // does not exist yet; upload away
             fileToDirectory(client, source, file, args.upload_folder);
           } else {
             console.log(error);
             throw error;
           }
-        } else { // file is on the server
+        }
+        // file is on the server
+        else { 
           if (args.force) {
             fileToDirectory(client, source, file, args.upload_folder);
           } else {
@@ -67,27 +73,32 @@ var uploadFileToFolder = function uploadFileToFolder(client, args, source, file)
           }
         }
       });
-    } else { // not Folderish
-      throw new Error('destination ' + check_url + ' is not Folderish');
-    } 
+    }
+    // not Folderish
+    else { throw new Error('destination ' + check_url + ' is not Folderish'); } 
   });
 };
 
 var uploadFileToFile = function uploadFileToFile(client, args, source, file){
-  var check_url = 'path' + args.upload_document;
+
   var upload_folder = path.dirname(args.upload_document);
-  // change the filename
+  // change the file.filename to rename file on the move
   file.filename = path.basename(args.upload_document);
+
+  // does the file already exist on nuxeo?
+  var check_url = 'path' + args.upload_document;
   client.request(check_url).get(function(error, remote) {
     if (error) {
       if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
-        // does not exist; upload away
+        // does not exist yet; upload away
         fileToDirectory(client, source, file, upload_folder);
       } else {
         console.log(error);
         throw error;
       }
-    } else { // file is on the server
+    }
+    // file is on the server
+    else {
       if (args.force) {
         fileToDirectory(client, source, file, upload_folder);
       } else {
@@ -97,9 +108,33 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
   });
 }
 
+var makeDocument = function makeDocument(client, args){
+
+  // check if the document exists
+  var path = args.path[0];
+  var check_url = 'path' + path;
+  client.request(check_url).get(function(error, remote) {
+    if (error) {
+      if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+        // does not exist yet; create it
+        createDocument(client, {type: args.type, name: path});
+      } else {
+        console.log(error);
+        throw error;
+      }
+    }
+    // Folder is already on the server
+    else {
+      if (args.force) {
+        createDocument(client, {type: args.type, name: path});
+      } else {
+        console.log(path + ' exists on nuxeo; use `-f` to force');
+      }
+    }
+  });
+}
+
 // upload a file to a directory
-// can rename the file in the remote directory by tweaking file.filename
-// `file` is a restler file, as used by nuxeo-js-client
 var fileToDirectory = function fileToDirectory(client, source, file, upload_folder){
   var uploader = client.operation('FileManager.Import')
                        .context({ currentDocument: upload_folder })
@@ -116,6 +151,17 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
     });
   });
 };
+
+// create document
+var createDocument = function createDocument(client, params){
+  client.operation('Document.Create')
+        .params(params)
+        .input('doc:/')
+        .execute(function(error, folder) {
+          if (error) { console.log(error); throw error; }
+          console.log(folder);
+        });
+}
 
 if (require.main === module) { main(); }
 
