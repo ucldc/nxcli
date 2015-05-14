@@ -1,7 +1,12 @@
 'use strict';
 
+/* nx nuxeo command line
+ * ---- command line argument parsing
+ *  uses https://www.npmjs.com/package/argparse , a clone of python argparse
+ *  return a dictionary/associative array of command line options
+ */
 
-exports.parser = function argparse() {
+exports.getArgs = function getArgs() {
   var ArgumentParser = require('argparse').ArgumentParser;
   var parser = new ArgumentParser({
     version: '0.1.0',
@@ -49,7 +54,15 @@ exports.parser = function argparse() {
     required: true
   });
 
-  return parser;
+  var args = parser.parseArgs();
+
+  // extra validation
+  // argparse can check for a required mutually exclusive group
+  if (args.subcommand_name === 'upfile' && !args.upload_file && !args.upload_folder) {
+    console.log('error: nx upfile: either -dir/--upload_directory or -doc/--upload_document is required');
+    process.exit(1);
+  }
+  return args;
 
 }
 
