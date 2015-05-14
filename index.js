@@ -12,31 +12,32 @@ function main() {
   // parse subcommand and command line arguments
   var args = require('./arguments.js').getArgs();
 
-  // set up nuxeo client
-  var client = new nuxeo.Client(
-    require('rc')('nx', {}, args)
-  );
+  // set up nuxeo client (with nxrc file, if present)
+  var client = new nuxeo.Client(require('rc')('nx', {}, args));
 
   // upload a file
   if (args.subcommand_name === 'upfile') {
     var source = args.source_file[0];
     var stats = fs.statSync(source);
     var file = rest.file(source, null, stats.size, null, null);
-
-    /* upfile -dir UPLOAD_FOLDER
-       one of two mutually exclusive options  */
+    // one of two mutually exclusive options 
     if (args.upload_folder) {
       uploadFileToFolder(client, args, source, file);
-
-    /* upfile -doc UPLOAD_DOCUMENT
-    */
     } else if(args.upload_document) {
       uploadFileToFile(client, args, source, file);
     }
-  } else if (args.subcommand_name === 'mkdoc') {
-  } else {
-    console.log('this should not be possible');
-    process.exit(1);
+  }
+
+  // create a new empty document on the server
+  else if (args.subcommand_name === 'mkdoc') {
+    var path = args.path[0];
+    console.log(args);
+
+  }
+
+  // should not be possible
+  else {
+    throw new Error(args.subcommand_name + ' not implimented'); 
   }
 }
 
@@ -96,10 +97,6 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
   });
 }
 
-/*  
- *  abstract functions
- */
-
 // upload a file to a directory
 // can rename the file in the remote directory by tweaking file.filename
 // `file` is a restler file, as used by nuxeo-js-client
@@ -120,13 +117,7 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
   });
 };
 
-// create a new document
-var createDocument = function createDocument(client, path, type){
-};
-
-if (require.main === module) {
-  main();
-}
+if (require.main === module) { main(); }
 
 /* Copyright © 2015, Regents of the University of California
 
