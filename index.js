@@ -22,6 +22,10 @@ function main() {
    * upload a named file to a directory or full path on nuxeo
    */
   if (args.subcommand_name === 'upfile') {
+    if (!args.upload_file && !args.upload_folder) {
+      console.log('error: nx upfile: either -dir/--upload_directory or -doc/--upload_document is required');
+      process.exit(1);
+    }
     var source = args.source_file[0];
     var stats = fs.statSync(source);
     var file = rest.file(source, null, stats.size, null, null);
