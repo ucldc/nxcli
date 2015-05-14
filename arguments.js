@@ -1,4 +1,5 @@
 'use strict';
+var packageJson = require('./package.json');
 
 /* nx nuxeo command line
  * ---- command line argument parsing
@@ -9,9 +10,9 @@
 exports.getArgs = function getArgs() {
   var ArgumentParser = require('argparse').ArgumentParser;
   var parser = new ArgumentParser({
-    version: '0.1.0',
     addHelp: true,
-    description: 'nuxeo command line helper',
+    description: packageJson.description,
+    version: packageJson.version
   });
 
   // --config for rc files
