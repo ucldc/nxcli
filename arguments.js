@@ -58,8 +58,9 @@ exports.getArgs = function getArgs() {
 
   // extra validation
   // argparse can check for a required mutually exclusive group
-  if (args.subcommand_name === 'upfile' && !args.upload_file && !args.upload_folder) {
-    console.log('error: nx upfile: either -dir/--upload_directory or -doc/--upload_document is required');
+  if (args.subcommand_name === 'upfile' && !args.upload_document && !args.upload_folder) {
+    console.log(args);
+    console.log('error: nx upfile: either -dir/--upload_folder or -doc/--upload_document is required');
     process.exit(1);
   }
   return args;
