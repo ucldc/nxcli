@@ -145,6 +145,7 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
     }, function (error, data) {
       if (error) {
         console.log('uploadError', error);
+        throw error;
       } else {
         console.log('upload', data);
       }
@@ -158,8 +159,12 @@ var createDocument = function createDocument(client, params){
         .params(params)
         .input('doc:/')
         .execute(function(error, folder) {
-          if (error) { console.log(error); throw error; }
-          console.log(folder);
+          if (error) {
+            console.log('createError', error);
+            throw error;
+          } else {
+            console.log('create', folder);
+          }
         });
 }
 
