@@ -9,8 +9,6 @@ nx mkdoc --help
 In the future, there may be added more `nx` commands; such as
 
  * `nx updir` recursivly upload directory
- 
-But right now, just uploads files into pre-existing folders
 
 needs a better package name
  
