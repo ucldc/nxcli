@@ -17,7 +17,7 @@ needs a better package name
 ## notes on node
 
  * `npm link .` is very helpful during development
- * `npm install https://github.com/tingletech/nx/archive/master.tar.gz`
+ * `npm install https://github.com/ucldc/nxcli/archive/master.tar.gz`
 
  * Writing Command Line Tools with Node
 01 March 2015 by Jack Franklin http://javascriptplayground.com/blog/2015/03/node-command-line-tool/
