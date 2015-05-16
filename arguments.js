@@ -62,6 +62,27 @@ exports.getArgs = function getArgs() {
     help: 'create document even if it already exists (otherwise skip)'
   });
 
+  // nx updir
+
+  // nx ls
+  var ls = subparsers.addParser('ls', {
+    addHelp: true,
+    help: 'list remote path'
+  });
+  ls.addArgument([ 'path' ], {
+    nargs: '1',
+    help: 'path to list'
+  });
+
+  // nx nxql
+  var ls = subparsers.addParser(['q'], {
+    addHelp: true,
+    help: 'nxql query'
+  });
+  ls.addArgument([ 'query' ], {
+    nargs: '1',
+    help: 'path to list'
+  });
 
   var args = parser.parseArgs();
 

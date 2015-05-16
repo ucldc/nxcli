@@ -7,6 +7,9 @@ var path = require('path');
 var http = require('http');
 var url = require('url');
 
+/**
+ * Main function called by command line
+ */
 function main() {
 
   // parse subcommand and command line arguments
@@ -15,7 +18,7 @@ function main() {
   // set up nuxeo client (with nxrc file, if present)
   var client = new nuxeo.Client(require('rc')('nx', {}, args));
 
-  // upload a file
+  /** upfile - upload file to document or folder */
   if (args.subcommand_name === 'upfile') {
     var source = args.source_file[0];
     var stats = fs.statSync(source);
@@ -30,9 +33,19 @@ function main() {
     }
   }
 
-  // create a new empty document on the server
+  /** mkdoc - create document  */
   else if (args.subcommand_name === 'mkdoc') {
     makeDocument(client, args);
+  }
+
+  /** ls - list nuxeo path  */
+  else if (args.subcommand_name === 'ls') {
+    lsPath(client, args.path[0]);
+  }
+
+  /** ls - list nuxeo path  */
+  else if (args.subcommand_name === 'q') {
+    nxql(client, args.query[0]);
   }
 
   // should not be possible
@@ -41,7 +54,13 @@ function main() {
   }
 }
 
-
+/**
+ * wrapper for uploading file to a Folder
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} args - parsed dict of command line arguments
+ * @param {string} source - path to the local file
+ * @file {Object} file - restler.file object
+ */
 var uploadFileToFolder = function uploadFileToFolder(client, args, source, file){
 
   // upload directory must exist
@@ -79,6 +98,14 @@ var uploadFileToFolder = function uploadFileToFolder(client, args, source, file)
   });
 };
 
+
+/**
+ * wrapper for uploading file to specific document path name
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} args - parsed dict of command line arguments
+ * @param {string} source - path to the local file
+ * @file {Object} file - restler.file object  / file.filename will be the upload name
+ */
 var uploadFileToFile = function uploadFileToFile(client, args, source, file){
 
   var upload_folder = path.dirname(args.upload_document);
@@ -108,6 +135,12 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
   });
 }
 
+
+/**
+ * create a new document at a specific path
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} args - parsed dict of command line arguments
+ */
 var makeDocument = function makeDocument(client, args){
 
   // check if the document exists
@@ -132,9 +165,54 @@ var makeDocument = function makeDocument(client, args){
       }
     }
   });
+};
+
+
+/**
+ * list a specific path
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} args - parsed dict of command line arguments
+ */
+var lsPath = function lsPath(client, path){
+  // check path specific path
+  var check_url = 'path' + path;
+  client.request(check_url).get(function(error, remote) {
+    if (error) { throw error; }
+    formatDocumentEntityType(remote);
+  });
+  // check the path for childern
+  check_url = check_url.replace(/\/$/, "") + '/@children';
+  client.request(check_url).get(function(error, remote) {
+    if (error) { console.log(error); throw error; }
+    remote.entries.forEach(function(entry){
+      formatDocumentEntityType(entry);
+    });
+  });
 }
 
-// upload a file to a directory
+var nxql = function nxql(client, query){
+  client.request('query?query=' + encodeURIComponent(query))
+        .get(function(error, remote) {
+          if (error) { console.log(error); throw error; }
+          remote.entries.forEach(function(entry){
+            formatDocumentEntityType(entry);
+          });
+        });
+}
+
+var formatDocumentEntityType = function formatDocumentEntityType(json) {
+  console.log(json.uid + '\t' + json.type + '\t' + json.path );
+}
+
+
+/**
+ * create a new document at a specific path
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} args - parsed dict of command line arguments
+ * @param {string} source - path to the local file
+ * @file {Object} file - restler.file object  / file.filename will be the upload name
+ * @file {string} upload_folder - path on remote server
+ */
 var fileToDirectory = function fileToDirectory(client, source, file, upload_folder){
   var uploader = client.operation('FileManager.Import')
                        .context({ currentDocument: upload_folder })
@@ -153,7 +231,12 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
   });
 };
 
-// create document
+
+/**
+ * create a new document at a specific path
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} params - parameters to pass to {@code Document.Create}
+ */
 var createDocument = function createDocument(client, params){
   client.operation('Document.Create')
         .params(params)
@@ -168,6 +251,7 @@ var createDocument = function createDocument(client, params){
         });
 }
 
+/**  copy python's main idiom for command line programs */
 if (require.main === module) { main(); }
 
 /* Copyright © 2015, Regents of the University of California

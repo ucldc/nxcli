@@ -4,6 +4,8 @@ quick utility to upload files to Nuxeo
 nx --help
 nx upfile --help
 nx mkdoc --help
+nx ls --help
+nx q --help
 ```
 
 In the future, there may be added more `nx` commands; such as
