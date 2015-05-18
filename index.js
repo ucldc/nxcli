@@ -135,22 +135,27 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
   });
 }
 
-
 /**
  * create a new document at a specific path
  * @param {Object} client - Nuxeo Client
  * @param {Object} args - parsed dict of command line arguments
  */
 var makeDocument = function makeDocument(client, args){
-
   // check if the document exists
-  var path = args.path[0];
-  var check_url = 'path' + path;
+  var pathin = args.path[0];
+  var check_url = 'path' + pathin;
+  var params = {
+    type: args.type,
+    name: pathin,
+    properties: {
+      "dc:title": path.basename(pathin),
+    }
+  };
   client.request(check_url).get(function(error, remote) {
     if (error) {
       if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
         // does not exist yet; create it
-        createDocument(client, {type: args.type, name: path});
+        createDocument(client, params);
       } else {
         console.log(error);
         throw error;
@@ -159,7 +164,7 @@ var makeDocument = function makeDocument(client, args){
     // Folder is already on the server
     else {
       if (args.force) {
-        createDocument(client, {type: args.type, name: path});
+        createDocument(client, params);
       } else {
         console.log(path + ' exists on nuxeo; use `-f` to force');
       }
