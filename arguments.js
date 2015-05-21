@@ -61,6 +61,10 @@ exports.getArgs = function getArgs() {
     action: 'storeTrue',
     help: 'create document even if it already exists (otherwise skip)'
   });
+  mkdoc.addArgument( [ '-p', '--parents' ], {
+    action: 'storeTrue',
+    help: 'create intermediate directories'
+  });
 
   // nx updir
 
@@ -75,11 +79,11 @@ exports.getArgs = function getArgs() {
   });
 
   // nx nxql
-  var ls = subparsers.addParser(['q'], {
+  var q = subparsers.addParser(['q'], {
     addHelp: true,
     help: 'nxql query'
   });
-  ls.addArgument([ 'query' ], {
+  q.addArgument([ 'query' ], {
     nargs: '1',
     help: 'path to list'
   });
