@@ -41,7 +41,7 @@ function main() {
       makeParents(client, args.path[0], args.type, args.force);
     } else {
       makeDocument(client, args.path[0], args.type, args.force).then(function(res) {
-        console.log(res[0]);
+        console.log(res);
       }).catch(function(error) {
         console.log(error, args.path[0]);
       });
@@ -187,9 +187,10 @@ var makeParents = function makeParents(client, docpath, type, force){
 var makeDocument = function makeDocument(client, pathin, type, force, parents){
   // check if the document exists
   var check_url = 'path' + pathin;
+  var input =  path.dirname(pathin);
   var params = {
     type: type,
-    name: pathin,
+    name: path.basename(pathin),
     properties: {
       "dc:title": path.basename(pathin),
     }
@@ -201,14 +202,14 @@ var makeDocument = function makeDocument(client, pathin, type, force, parents){
   return request.getAsync().then(function(remote) {
     // Folder is alread on the server
     if (force) {
-      return createDocument(client, params);
+      return createDocument(client, params, input);
     } else if (! parents){
       console.log(pathin + ' exists on nuxeo; use `-f` to force');
     }
   }).catch(function(error) {
     if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
       // does not exist yet; create it
-      return createDocument(client, params);
+      return createDocument(client, params, input);
     } else {
       console.log(error);
       throw error;
@@ -286,11 +287,11 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
  * @param {Object} client - Nuxeo Client
  * @param {Object} params - parameters to pass to {@code Document.Create}
  */
-var createDocument = function createDocument(client, params){
+var createDocument = function createDocument(client, params, input){
   return new Promise(function(resolve, reject){
     client.operation('Document.Create')
           .params(params)
-          .input('doc:/')
+          .input(input)
           .execute(function(error, data, response) {
             if (error) { reject(error); }
             resolve(data);
