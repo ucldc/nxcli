@@ -259,7 +259,7 @@ var createDocument = function createDocument(client, params){
 /**  copy python's main idiom for command line programs */
 if (require.main === module) { main(); }
 
-/* Copyright © 2015, Regents of the University of California
+/* Copyright © 2016, Regents of the University of California
 
 All rights reserved.
 
