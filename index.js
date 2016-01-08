@@ -6,6 +6,8 @@ var nuxeo = require('nuxeo');
 var path = require('path');
 var http = require('http');
 var url = require('url');
+var ini = require('ini');
+var osHomedir = require('os-homedir');
 
 /**
  * Main function called by command line
@@ -16,7 +18,26 @@ function main() {
   var args = require('./arguments.js').getArgs();
 
   // set up nuxeo client (with nxrc file, if present)
-  var client = new nuxeo.Client(require('rc')('nx', {}, args));
+  var config_file = args.config || osHomedir() + '/.pynuxrc';
+  var config_parsed = ini.parse(fs.readFileSync(config_file, 'utf-8'));
+  var client_conf = config_parsed.rest_api;
+  var auth_method = config_parsed.nuxeo_account.method;
+  // support either auth method
+  if (auth_method == 'basic') {
+    client_conf['auth'] = {
+      method: 'basic',
+      username: config_parsed.nuxeo_account.user,
+      password: config_parsed.nuxeo_account.password,
+    };
+  } else if (auth_method == 'token') {
+    client_conf['auth'] = { method: 'token' };
+    client_conf['headers'] = {
+      'X-Authentication-Token': config_parsed.nuxeo_account['X-Authentication-Token']
+    };
+  } else {
+    throw new Error('invalid auth specified in conf');
+  }
+  var client = new nuxeo.Client(client_conf, args);
 
   /** upfile - upload file to document or folder */
   if (args.subcommand_name === 'upfile') {
