@@ -6,6 +6,8 @@ var nuxeo = require('nuxeo');
 var path = require('path');
 var http = require('http');
 var url = require('url');
+var _ = require('lodash');
+var Promise = require('bluebird');
 
 /**
  * Main function called by command line
@@ -35,7 +37,15 @@ function main() {
 
   /** mkdoc - create document  */
   else if (args.subcommand_name === 'mkdoc') {
-    makeDocument(client, args);
+    if (args.parents) {
+      makeParents(client, args.path[0], args.type, args.force);
+    } else {
+      makeDocument(client, args.path[0], args.type, args.force).then(function(res) {
+        console.log(res);
+      }).catch(function(error) {
+        console.log(error, args.path[0]);
+      });
+    }
   }
 
   /** ls - list nuxeo path  */
@@ -135,39 +145,74 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
   });
 }
 
+
+/**
+ * parse a path string into an array of parents
+ */
+var parsePath = function parsePath(docpath){
+  // clean up string and split into an array
+  docpath = docpath.replace(/^\//,'').replace(/\/$/,'').split('/');
+  // reduce the array into an array of parent paths
+  return _.reduce(docpath, function(result, n, z) {
+    // want to reduce to an array, it starts as a String
+    if (result.constructor === String) {
+      result = [ '/' + result ];
+    }
+    result.push(result[z - 1] + '/' + n);
+    return result;
+  });
+}
+
+
+/**
+ * create parent directories
+ */
+var makeParents = function makeParents(client, docpath, type, force){
+  // https://github.com/petkaantonov/bluebird/issues/134
+  Promise.reduce(parsePath(docpath), function(memo, item) {
+    return makeDocument(client, item, type, force, true).then(function(res) {
+      if (res) { console.log(res) };
+    }).catch(function(error) {
+      console.log(error, docpath);
+    });
+  }, 0);
+}
+
+
 /**
  * create a new document at a specific path
  * @param {Object} client - Nuxeo Client
  * @param {Object} args - parsed dict of command line arguments
  */
-var makeDocument = function makeDocument(client, args){
+var makeDocument = function makeDocument(client, pathin, type, force, parents){
   // check if the document exists
-  var pathin = args.path[0];
   var check_url = 'path' + pathin;
+  var input =  path.dirname(pathin);
   var params = {
-    type: args.type,
-    name: pathin,
+    type: type,
+    name: path.basename(pathin),
     properties: {
       "dc:title": path.basename(pathin),
     }
   };
-  client.request(check_url).get(function(error, remote) {
-    if (error) {
-      if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
-        // does not exist yet; create it
-        createDocument(client, params);
-      } else {
-        console.log(error);
-        throw error;
-      }
+
+  var request = client.request(check_url);
+  Promise.promisifyAll(request);
+
+  return request.getAsync().then(function(remote) {
+    // Folder is alread on the server
+    if (force) {
+      return createDocument(client, params, input);
+    } else if (! parents){
+      console.log(pathin + ' exists on nuxeo; use `-f` to force');
     }
-    // Folder is already on the server
-    else {
-      if (args.force) {
-        createDocument(client, params);
-      } else {
-        console.log(path + ' exists on nuxeo; use `-f` to force');
-      }
+  }).catch(function(error) {
+    if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+      // does not exist yet; create it
+      return createDocument(client, params, input);
+    } else {
+      console.log(error);
+      throw error;
     }
   });
 };
@@ -182,7 +227,7 @@ var lsPath = function lsPath(client, path){
   // check path specific path
   var check_url = 'path' + path;
   client.request(check_url).get(function(error, remote) {
-    if (error) { throw error; }
+    if (error) { console.log(error); throw error; }
     formatDocumentEntityType(remote);
   });
   // check the path for childern
@@ -242,19 +287,17 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
  * @param {Object} client - Nuxeo Client
  * @param {Object} params - parameters to pass to {@code Document.Create}
  */
-var createDocument = function createDocument(client, params){
-  client.operation('Document.Create')
-        .params(params)
-        .input('doc:/')
-        .execute(function(error, folder) {
-          if (error) {
-            console.log('createError', error);
-            throw error;
-          } else {
-            console.log('create', folder);
-          }
-        });
-}
+var createDocument = function createDocument(client, params, input){
+  return new Promise(function(resolve, reject){
+    client.operation('Document.Create')
+          .params(params)
+          .input(input)
+          .execute(function(error, data, response) {
+            if (error) { reject(error); }
+            resolve(data);
+          });
+  });
+};
 
 /**  copy python's main idiom for command line programs */
 if (require.main === module) { main(); }
