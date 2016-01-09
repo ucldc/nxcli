@@ -8,14 +8,17 @@ var http = require('http');
 var url = require('url');
 var ini = require('ini');
 var osHomedir = require('os-homedir');
+var winston = require('winston');
 
 /**
  * Main function called by command line
  */
 function main() {
-
   // parse subcommand and command line arguments
   var args = require('./arguments.js').getArgs();
+
+  // set up logging
+  winston.level = args.loglevel ? args.loglevel.toLowerCase() : 'error';
 
   // set up nuxeo client (with nxrc file, if present)
   var config_file = args.config || osHomedir() + '/.pynuxrc';
@@ -37,7 +40,9 @@ function main() {
   } else {
     throw new Error('invalid auth specified in conf');
   }
+  winston.debug(config_parsed);
   var client = new nuxeo.Client(client_conf, args);
+
 
   /** upfile - upload file to document or folder */
   if (args.subcommand_name === 'upfile') {
