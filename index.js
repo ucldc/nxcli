@@ -26,7 +26,7 @@ function main() {
   var config_file = args.config || osHomedir() + '/.pynuxrc';
   var config_parsed = ini.parse(fs.readFileSync(config_file, 'utf-8'));
   var client_conf = config_parsed.rest_api;
-  var auth_method = config_parsed.nuxeo_account.method;
+  var auth_method = config_parsed.nuxeo_account.method || 'basic';
   // support either auth method
   if (auth_method == 'basic') {
     client_conf['auth'] = {
