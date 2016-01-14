@@ -6,6 +6,9 @@ var nuxeo = require('nuxeo');
 var path = require('path');
 var http = require('http');
 var url = require('url');
+var ini = require('ini');
+var osHomedir = require('os-homedir');
+var winston = require('winston');
 var _ = require('lodash');
 var Promise = require('bluebird');
 
@@ -13,12 +16,35 @@ var Promise = require('bluebird');
  * Main function called by command line
  */
 function main() {
-
   // parse subcommand and command line arguments
   var args = require('./arguments.js').getArgs();
 
+  // set up logging
+  winston.level = args.loglevel ? args.loglevel.toLowerCase() : 'error';
+
   // set up nuxeo client (with nxrc file, if present)
-  var client = new nuxeo.Client(require('rc')('nx', {}, args));
+  var config_file = args.config || osHomedir() + '/.pynuxrc';
+  var config_parsed = ini.parse(fs.readFileSync(config_file, 'utf-8'));
+  var client_conf = config_parsed.rest_api;
+  var auth_method = config_parsed.nuxeo_account.method || 'basic';
+  // support either auth method
+  if (auth_method == 'basic') {
+    client_conf['auth'] = {
+      method: 'basic',
+      username: config_parsed.nuxeo_account.user,
+      password: config_parsed.nuxeo_account.password,
+    };
+  } else if (auth_method == 'token') {
+    client_conf['auth'] = { method: 'token' };
+    client_conf['headers'] = {
+      'X-Authentication-Token': config_parsed.nuxeo_account['X-Authentication-Token']
+    };
+  } else {
+    throw new Error('invalid auth specified in conf');
+  }
+  winston.debug(config_parsed);
+  var client = new nuxeo.Client(client_conf, args);
+
 
   /** upfile - upload file to document or folder */
   if (args.subcommand_name === 'upfile') {
@@ -302,7 +328,7 @@ var createDocument = function createDocument(client, params, input){
 /**  copy python's main idiom for command line programs */
 if (require.main === module) { main(); }
 
-/* Copyright © 2015, Regents of the University of California
+/* Copyright © 2016, Regents of the University of California
 
 All rights reserved.
 

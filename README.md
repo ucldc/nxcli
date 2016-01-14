@@ -25,3 +25,25 @@ needs a better package name
 01 March 2015 by Jack Franklin http://javascriptplayground.com/blog/2015/03/node-command-line-tool/
  * http://nodeca.github.io/argparse/
  * https://github.com/nuxeo/nuxeo-js-client/
+
+## rcfile
+
+```ini
+[nuxeo_account]
+method = token
+user = Administrator
+password = Administrator
+X-Authentication-Token = xxkxkx
+
+[rest_api]
+; pynux style
+base = http://localhost:8080/nuxeo/site/api/v1
+; js style
+baseURL = http://localhost:8080/nuxeo/
+restPath = site/api/v1/
+automationPath = site/api/v1/automation/
+timeout = 3000
+
+[platform_importer]
+base = http://localhost:8080/nuxeo/site/fileImporter
+```

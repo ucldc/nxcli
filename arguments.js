@@ -21,6 +21,12 @@ exports.getArgs = function getArgs() {
     help: 'json or ini format rc file'
   });
 
+  // --loglevel for winston level
+  parser.addArgument( ['--loglevel'], {
+    action: 'store', addHelp: true,
+    help: 'log level'
+  });
+
   var subparsers = parser.addSubparsers({
     title:'subcommands',
     dest:"subcommand_name"
@@ -101,7 +107,7 @@ exports.getArgs = function getArgs() {
 
 }
 
-/* Copyright © 2015, Regents of the University of California
+/* Copyright © 2016, Regents of the University of California
 
 All rights reserved.
 
