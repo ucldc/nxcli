@@ -91,7 +91,18 @@ exports.getArgs = function getArgs() {
   });
   q.addArgument([ 'query' ], {
     nargs: '1',
-    help: 'path to list'
+    help: 'nxql query'
+  });
+
+  // nx extrafile
+  var extrafile = subparsers.addParser(['extrafile'], {
+    addHelp: true,
+    help: 'upload extra files to `extra_files:file`'
+  });
+  extrafile.addArgument( [ 'source_file' ], { nargs: '1' });
+  extrafile.addArgument( [ 'destination_document' ], {
+    nargs: '1',
+    help: 'existing document with `extra_files:file`'
   });
 
   var args = parser.parseArgs();

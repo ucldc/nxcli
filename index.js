@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 var fs = require('fs');
-var rest = require('nuxeo/node_modules/restler');
 var nuxeo = require('nuxeo');
 var path = require('path');
 var http = require('http');
@@ -45,12 +44,12 @@ function main() {
   winston.debug(config_parsed);
   var client = new nuxeo.Client(client_conf, args);
 
-
   /** upfile - upload file to document or folder */
   if (args.subcommand_name === 'upfile') {
     var source = args.source_file[0];
     var stats = fs.statSync(source);
-    var file = rest.file(source, null, stats.size, null, null);
+    var file = fs.createReadStream(source);
+
     // uploading to a folder
     if (args.upload_folder) {
       uploadFileToFolder(client, args, source, file);
@@ -59,6 +58,13 @@ function main() {
     else if(args.upload_document) {
       uploadFileToFile(client, args, source, file);
     }
+  }
+
+  /** extrafile **/
+  else if (args.subcommand_name === 'extrafile') {
+    var source = args.source_file[0];
+    var file = fs.createReadStream(source);
+    uploadExtraFiles(client, args, source, file);
   }
 
   /** mkdoc - create document  */
@@ -89,6 +95,27 @@ function main() {
     throw new Error(args.subcommand_name + ' not implimented'); 
   }
 }
+
+var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
+  var check_url = 'path' + args.destination_document;
+  client.schemas(['extra_files']);
+  client.document(args.destination_document[0]).fetch(function(error, doc) {
+    if (error) { console.log(error); throw error; }
+    var updated = [];
+    updated.push({"type": "audio-mstr-edit"});
+    doc.set({
+      'extra_files:file': updated
+    });
+    doc.save(function(error, doc) {
+      if (error) { console.log(error); throw error; }
+      console.log("save!");
+      filesToExtraFiles(client, source, file, args.destination_document[0]);
+    });
+  });
+
+  client.request(check_url).get(function(error, remote) {
+  });
+};
 
 /**
  * wrapper for uploading file to a Folder
@@ -307,6 +334,28 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
   });
 };
 
+var filesToExtraFiles = function filesToExtraFiles(client, source, file, destination){
+  console.log(destination);
+  var uploader = client.operation('Blob.Attach')
+    // .context({ currentDocument: destination })
+    .params({
+      document: destination,
+      save: true,
+      xpath: 'auxiliary_files:file'
+      // xpath: 'extra_files:file/item[3]/blob'
+    })
+    .uploader();
+  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+    uploader.execute(function (error, data) {
+      if (error) {
+        console.log('uploadError', error);
+        throw error;
+      } else {
+        console.log('upload', data);
+      }
+    });
+  });
+};
 
 /**
  * create a new document at a specific path
