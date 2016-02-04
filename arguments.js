@@ -97,12 +97,12 @@ exports.getArgs = function getArgs() {
   // nx extrafile
   var extrafile = subparsers.addParser(['extrafile'], {
     addHelp: true,
-    help: 'upload extra files to `extra_files:file`'
+    help: 'upload extra files to `files:files`'
   });
   extrafile.addArgument( [ 'source_file' ], { nargs: '1' });
   extrafile.addArgument( [ 'destination_document' ], {
     nargs: '1',
-    help: 'existing document with `extra_files:file`'
+    help: 'existing document with `files:files`'
   });
 
   var args = parser.parseArgs();

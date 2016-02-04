@@ -98,17 +98,16 @@ function main() {
 
 var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
   var check_url = 'path' + args.destination_document;
-  client.schemas(['extra_files']);
+  client.schemas(['files']);
   client.document(args.destination_document[0]).fetch(function(error, doc) {
     if (error) { console.log(error); throw error; }
     var updated = [];
     updated.push({"type": "audio-mstr-edit"});
     doc.set({
-      'extra_files:file': updated
+      'files:files': updated
     });
     doc.save(function(error, doc) {
       if (error) { console.log(error); throw error; }
-      console.log("save!");
       filesToExtraFiles(client, source, file, args.destination_document[0]);
     });
   });
@@ -341,8 +340,7 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
     .params({
       document: destination,
       save: true,
-      xpath: 'auxiliary_files:file'
-      // xpath: 'extra_files:file/item[3]/blob'
+      xpath: 'files:files'
     })
     .uploader();
   uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
@@ -351,7 +349,7 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
         console.log('uploadError', error);
         throw error;
       } else {
-        console.log('upload', data);
+        // `data` here is content of the file 
       }
     });
   });
