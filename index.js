@@ -102,7 +102,7 @@ var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
   client.document(args.destination_document[0]).fetch(function(error, doc) {
     if (error) { console.log(error); throw error; }
     var updated = [];
-    updated.push({"type": "audio-mstr-edit"});
+    // updated.push({"type": "audio-mstr-edit"});
     doc.set({
       'files:files': updated
     });
