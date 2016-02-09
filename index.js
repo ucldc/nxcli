@@ -49,6 +49,7 @@ function main() {
     var source = args.source_file[0];
     var stats = fs.statSync(source);
     var file = fs.createReadStream(source);
+    file.filename = path.basename(file.path);
 
     // uploading to a folder
     if (args.upload_folder) {
@@ -319,7 +320,8 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
   var uploader = client.operation('FileManager.Import')
                        .context({ currentDocument: upload_folder })
                        .uploader();
-  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+  var options = { 'name': file.filename };
+  var doc = uploader.uploadFile(file, options, function(fileIndex, fileObj, timeDiff) {
     uploader.execute({
       path: path.basename(source)
     }, function (error, data) {
@@ -328,6 +330,12 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
         throw error;
       } else {
         console.log('upload', data);
+        var doc = client.document(data.entries[0]);
+        doc.set({'file:filename': file.filename });
+        doc.save(function(error, doc) {
+          if (error) { console.log(error); throw error; }
+          console.log('updated file:filename');
+        });
       }
     });
   });
