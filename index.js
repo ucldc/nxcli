@@ -36,7 +36,8 @@ function main() {
   } else if (auth_method == 'token') {
     client_conf['auth'] = { method: 'token' };
     client_conf['headers'] = {
-      'X-Authentication-Token': config_parsed.nuxeo_account['X-Authentication-Token']
+      'X-Authentication-Token': config_parsed.nuxeo_account['X-Authentication-Token'],
+      timeout: 6995000
     };
   } else {
     throw new Error('invalid auth specified in conf');
