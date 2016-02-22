@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 var fs = require('fs');
-var rest = require('nuxeo/node_modules/restler');
 var nuxeo = require('nuxeo');
 var path = require('path');
 var http = require('http');
@@ -37,7 +36,8 @@ function main() {
   } else if (auth_method == 'token') {
     client_conf['auth'] = { method: 'token' };
     client_conf['headers'] = {
-      'X-Authentication-Token': config_parsed.nuxeo_account['X-Authentication-Token']
+      'X-Authentication-Token': config_parsed.nuxeo_account['X-Authentication-Token'],
+      timeout: 6995000
     };
   } else {
     throw new Error('invalid auth specified in conf');
@@ -45,12 +45,13 @@ function main() {
   winston.debug(config_parsed);
   var client = new nuxeo.Client(client_conf, args);
 
-
   /** upfile - upload file to document or folder */
   if (args.subcommand_name === 'upfile') {
     var source = args.source_file[0];
     var stats = fs.statSync(source);
-    var file = rest.file(source, null, stats.size, null, null);
+    var file = fs.createReadStream(source);
+    file.filename = path.basename(file.path);
+
     // uploading to a folder
     if (args.upload_folder) {
       uploadFileToFolder(client, args, source, file);
@@ -59,6 +60,13 @@ function main() {
     else if(args.upload_document) {
       uploadFileToFile(client, args, source, file);
     }
+  }
+
+  /** extrafile **/
+  else if (args.subcommand_name === 'extrafile') {
+    var source = args.source_file[0];
+    var file = fs.createReadStream(source);
+    uploadExtraFiles(client, args, source, file);
   }
 
   /** mkdoc - create document  */
@@ -89,6 +97,26 @@ function main() {
     throw new Error(args.subcommand_name + ' not implimented'); 
   }
 }
+
+var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
+  var check_url = 'path' + args.destination_document;
+  client.schemas(['files']);
+  client.document(args.destination_document[0]).fetch(function(error, doc) {
+    if (error) { console.log(error); throw error; }
+    var updated = [];
+    // updated.push({"type": "audio-mstr-edit"});
+    doc.set({
+      'files:files': updated
+    });
+    doc.save(function(error, doc) {
+      if (error) { console.log(error); throw error; }
+      filesToExtraFiles(client, source, file, args.destination_document[0]);
+    });
+  });
+
+  client.request(check_url).get(function(error, remote) {
+  });
+};
 
 /**
  * wrapper for uploading file to a Folder
@@ -293,7 +321,8 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
   var uploader = client.operation('FileManager.Import')
                        .context({ currentDocument: upload_folder })
                        .uploader();
-  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+  var options = { 'name': file.filename };
+  var doc = uploader.uploadFile(file, options, function(fileIndex, fileObj, timeDiff) {
     uploader.execute({
       path: path.basename(source)
     }, function (error, data) {
@@ -302,11 +331,38 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
         throw error;
       } else {
         console.log('upload', data);
+        var doc = client.document(data.entries[0]);
+        doc.set({'file:filename': file.filename });
+        doc.save(function(error, doc) {
+          if (error) { console.log(error); throw error; }
+          console.log('updated file:filename');
+        });
       }
     });
   });
 };
 
+var filesToExtraFiles = function filesToExtraFiles(client, source, file, destination){
+  console.log(destination);
+  var uploader = client.operation('Blob.Attach')
+    // .context({ currentDocument: destination })
+    .params({
+      document: destination,
+      save: true,
+      xpath: 'files:files'
+    })
+    .uploader();
+  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+    uploader.execute(function (error, data) {
+      if (error) {
+        console.log('uploadError', error);
+        throw error;
+      } else {
+        // `data` here is content of the file 
+      }
+    });
+  });
+};
 
 /**
  * create a new document at a specific path
