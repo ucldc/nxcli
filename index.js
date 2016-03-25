@@ -92,6 +92,11 @@ function main() {
     nxql(client, args.query[0]);
   }
 
+  /** mv - move nuxeo document */
+  else if (args.subcommand_name === 'mv') {
+    nxmv(client, args.source_document[0], args.destination_document[0])
+  }
+
   // should not be possible
   else {
     throw new Error(args.subcommand_name + ' not implimented'); 
@@ -302,11 +307,15 @@ var nxql = function nxql(client, query){
             formatDocumentEntityType(entry);
           });
         });
+};
+
+var nxmv = function nxmv(client, from, to){
+  console.log(client, from, to);
 }
 
 var formatDocumentEntityType = function formatDocumentEntityType(json) {
   console.log(json.uid + '\t' + json.type + '\t' + json.path );
-}
+};
 
 
 /**

@@ -28,8 +28,8 @@ exports.getArgs = function getArgs() {
   });
 
   var subparsers = parser.addSubparsers({
-    title:'subcommands',
-    dest:"subcommand_name"
+    title: 'subcommands',
+    dest: 'subcommand_name'
   });
 
   // nx upfile 
@@ -105,6 +105,13 @@ exports.getArgs = function getArgs() {
     help: 'existing document with `files:files`'
   });
 
+  // nx mv
+  var mv = subparsers.addParser(['mv'], {
+    addHelp: true,
+  });
+  mv.addArgument( [ 'source_document' ], { nargs: '1' });
+  mv.addArgument( [ 'destination_document' ], { nargs: '1' });
+
   var args = parser.parseArgs();
 
   // extra validation
@@ -116,7 +123,7 @@ exports.getArgs = function getArgs() {
   }
   return args;
 
-}
+};
 
 /* Copyright © 2016, Regents of the University of California
 
