@@ -108,6 +108,7 @@ exports.getArgs = function getArgs() {
   // nx mv
   var mv = subparsers.addParser(['mv'], {
     addHelp: true,
+    help: 'move destination is Folderish document'
   });
   mv.addArgument( [ 'source_document' ], { nargs: '1' });
   mv.addArgument( [ 'destination_document' ], { nargs: '1' });

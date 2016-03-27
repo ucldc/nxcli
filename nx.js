@@ -286,10 +286,17 @@ var nxql = function nxql(client, query){
         });
 };
 
-var nxmv = function nxmv(client, from, to){
-  console.log(client, from, to);
+var mv_to_folder = function mv_to_folder(client, from, to){
+  client.document(from)
+    .fetch(function(error, doc) {
+      if (error) { console.log(error); throw error; }
+      doc.move({
+        target: to
+      }, function(error, doc) {
+        console.log('Successfully moved ' + doc.title + ', updated path: ' + doc.path);
+      });
+  });
 };
-
 
 module.exports = {
   uploadExtraFiles: uploadExtraFiles,
@@ -300,7 +307,7 @@ module.exports = {
   makeDocument: makeDocument,
   lsPath: lsPath,
   nxql: nxql,
-  nxmv: nxmv,
+  mv_to_folder: mv_to_folder,
   formatDocumentEntityType: formatDocumentEntityType,
   fileToDirectory: fileToDirectory,
   filesToExtraFiles: filesToExtraFiles,

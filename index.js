@@ -90,7 +90,7 @@ function main() {
 
   /** mv - move nuxeo document */
   else if (args.subcommand_name === 'mv') {
-    nx.nxmv(client, args.source_document[0], args.destination_document[0]);
+    nx.mv_to_folder(client, args.source_document[0], args.destination_document[0]);
   }
 
   // should not be possible
