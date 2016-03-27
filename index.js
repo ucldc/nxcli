@@ -89,7 +89,7 @@ function main() {
   }
 
   /** mv - move nuxeo document */
-  else if (args.subcommand_name === 'mv') {
+  else if (args.subcommand_name === 'mvdoc') {
     nx.mv_to_folder(client, args.source_document[0], args.destination_document[0]);
   }
 

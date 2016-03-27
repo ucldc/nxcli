@@ -106,7 +106,7 @@ exports.getArgs = function getArgs() {
   });
 
   // nx mv
-  var mv = subparsers.addParser(['mv'], {
+  var mv = subparsers.addParser(['mvdoc'], {
     addHelp: true,
     help: 'move destination is Folderish document'
   });
