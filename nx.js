@@ -30,26 +30,34 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
 var forceFileToDocument = function forceFileToDocument(client,
                                                        file,
                                                        remote) {
-  console.log('hey');
-  console.log(remote);
-  var uploader = client.operation('Blob.Attach')
-    // .context({ currentDocument: destination })
+  var checkin = client.operation('Document.CheckIn')
+    .context({ currentDocument: remote })
+    .input('doc:' + remote.path)
     .params({
-      document: remote,
-      save: true
-      // xpath: 'files:files'
-    })  
-    .uploader();
-  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
-    uploader.execute(function (error, data) {
-      if (error) {
-        console.log('uploadError', error);
-        throw error;
-      } else {
-        // `data` here is content of the file 
-      }   
-    }); 
-  });
+      version: 'major'
+    })
+    .execute(function(error, doc) {
+      if (error) { console.log(error); throw error; }
+      console.log(doc);
+      var uploader = client.operation('Blob.Attach')
+        // .context({ currentDocument: destination })
+        .params({
+          document: doc,
+          save: true
+          // xpath: 'files:files'
+        })
+        .uploader();
+      uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+        uploader.execute(function (error, data) {
+          if (error) {
+            console.log('uploadError', error);
+            throw error;
+          } else {
+            // `data` here is content of the file
+          }
+        });
+      });
+    });
 }
 
 /**
