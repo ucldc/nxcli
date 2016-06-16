@@ -27,6 +27,31 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
   });
 };
 
+var forceFileToDocument = function forceFileToDocument(client,
+                                                       file,
+                                                       remote) {
+  console.log('hey');
+  console.log(remote);
+  var uploader = client.operation('Blob.Attach')
+    // .context({ currentDocument: destination })
+    .params({
+      document: remote,
+      save: true
+      // xpath: 'files:files'
+    })  
+    .uploader();
+  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+    uploader.execute(function (error, data) {
+      if (error) {
+        console.log('uploadError', error);
+        throw error;
+      } else {
+        // `data` here is content of the file 
+      }   
+    }); 
+  });
+}
+
 /**
  * create a new document at a specific path
  * @param {Object} client - Nuxeo Client
@@ -112,7 +137,7 @@ var uploadFileToFolder = function uploadFileToFolder(client, args, source, file)
         // file is on the server
         else { 
           if (args.force) {
-            fileToDirectory(client, source, file, args.upload_folder);
+            forceFileToDocument(client, file, remote);
           } else {
             console.log('file ' + check2_url  + ' exists on nuxeo; use `-f` to force');
           }
@@ -153,7 +178,7 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
     // file is on the server
     else {
       if (args.force) {
-        fileToDirectory(client, source, file, upload_folder);
+        forceFileToDocument(client, file, remote);
       } else {
         console.log('file ' + check_url  + ' exists on nuxeo; use `-f` to force');
       }
