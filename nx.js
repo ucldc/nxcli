@@ -42,6 +42,7 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
 var forceFileToDocument = function forceFileToDocument(client,
                                                        file,
                                                        remote) {
+  var options = { 'name': file.path };
   var checkin = client.operation('Document.CheckIn')
     .context({ currentDocument: remote })
     .input('doc:' + remote.path)
@@ -57,7 +58,7 @@ var forceFileToDocument = function forceFileToDocument(client,
           save: true
         })
         .uploader();
-      uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
+      uploader.uploadFile(file, options, function(fileIndex, fileObj, timeDiff) {
         uploader.execute(function (error, data) {
           if (error) {
             console.log('uploadError', error);
