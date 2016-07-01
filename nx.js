@@ -5,10 +5,16 @@ var _ = require('lodash');
 /* global -Promise */
 var Promise = require('bluebird');
 
+/**
+ * upload files to the "Files" tab
+ * @param {Object} client - Nuxeo Client
+ * @param {string} source - path to the local file
+ * @param {Object} file - Node.js Stream
+ * @param {string} destination - path on remote server
+ */
 var filesToExtraFiles = function filesToExtraFiles(client, source, file, destination){
   console.log(destination);
   var uploader = client.operation('Blob.Attach')
-    // .context({ currentDocument: destination })
     .params({
       document: destination,
       save: true,
@@ -27,6 +33,12 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
   });
 };
 
+/**
+ * upload a new version of a file, updating the major version number
+ * @param {Object} client - Nuxeo Client
+ * @param {Object} file - Node.js Stream
+ * @param {Object} remote - Nuxeo Document
+ */
 var forceFileToDocument = function forceFileToDocument(client,
                                                        file,
                                                        remote) {
@@ -40,11 +52,9 @@ var forceFileToDocument = function forceFileToDocument(client,
       if (error) { console.log(error); throw error; }
       console.log(doc);
       var uploader = client.operation('Blob.Attach')
-        // .context({ currentDocument: destination })
         .params({
           document: doc,
           save: true
-          // xpath: 'files:files'
         })
         .uploader();
       uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
@@ -63,10 +73,9 @@ var forceFileToDocument = function forceFileToDocument(client,
 /**
  * create a new document at a specific path
  * @param {Object} client - Nuxeo Client
- * @param {Object} args - parsed dict of command line arguments
  * @param {string} source - path to the local file
- * @file {Object} file - restler.file object  / file.filename will be the upload name
- * @file {string} upload_folder - path on remote server
+ * @param {Object} file - Node.js Stream
+ * @param {string} upload_folder - path on remote server
  */
 var fileToDirectory = function fileToDirectory(client, source, file, upload_folder){
   var uploader = client.operation('FileManager.Import')
@@ -99,7 +108,6 @@ var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
   client.document(args.destination_document[0]).fetch(function(error, doc) {
     if (error) { console.log(error); throw error; }
     var updated = [];
-    // updated.push({"type": "audio-mstr-edit"});
     doc.set({
       'files:files': updated
     });
@@ -118,7 +126,7 @@ var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
  * @param {Object} client - Nuxeo Client
  * @param {Object} args - parsed dict of command line arguments
  * @param {string} source - path to the local file
- * @file {Object} file - restler.file object
+ * @param {Object} file - Node.js Stream
  */
 var uploadFileToFolder = function uploadFileToFolder(client, args, source, file){
 
@@ -163,7 +171,7 @@ var uploadFileToFolder = function uploadFileToFolder(client, args, source, file)
  * @param {Object} client - Nuxeo Client
  * @param {Object} args - parsed dict of command line arguments
  * @param {string} source - path to the local file
- * @file {Object} file - restler.file object  / file.filename will be the upload name
+ * @param {Object} file - Node.js stream
  */
 var uploadFileToFile = function uploadFileToFile(client, args, source, file){
 
