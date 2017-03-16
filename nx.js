@@ -105,20 +105,9 @@ var fileToDirectory = function fileToDirectory(client, source, file, upload_fold
 
 var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
   var check_url = 'path' + args.destination_document;
-  client.schemas(['files']);
-  client.document(args.destination_document[0]).fetch(function(error, doc) {
-    if (error) { console.log(error); throw error; }
-    var updated = [];
-    doc.set({
-      'files:files': updated
-    });
-    doc.save(function(error, doc) {
-      if (error) { console.log(error); throw error; }
-      filesToExtraFiles(client, source, file, args.destination_document[0]);
-    });
-  });
-
   client.request(check_url).get(function(error, remote) {
+    if (error) { console.log(error); throw error; }
+    filesToExtraFiles(client, source, file, args.destination_document[0]);
   });
 };
 
