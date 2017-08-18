@@ -1,36 +1,29 @@
 #!/usr/bin/env node
 'use strict';
-var path = require('path');
-var _ = require('lodash');
-/* global -Promise */
-var Promise = require('bluebird');
+const path = require('path');
+const bluebird = require('bluebird');
 
 /**
  * upload files to the "Files" tab
- * @param {Object} client - Nuxeo Client
+ * @param {Object} nuxeo - Nuxeo Client
  * @param {string} source - path to the local file
  * @param {Object} file - Node.js Stream
  * @param {string} destination - path on remote server
  */
-var filesToExtraFiles = function filesToExtraFiles(client, source, file, destination){
+const filesToExtraFiles = function filesToExtraFiles(nuxeo, source, file, destination){
   console.log(destination);
-  var uploader = client.operation('Blob.Attach')
-    .params({
-      document: destination,
-      save: true,
-      xpath: 'files:files'
+  nuxeo.batchUpload()
+    .upload(file)
+    .then(res => {
+      return nuxeo.operation('Blob.AttachOnDocument')
+        .param('document', destination)
+        .param('save', true)
+        .param('xpath', 'files:files')
+        .input(res.blob)
+        .execute({ schemas: 'files' });
     })
-    .uploader();
-  uploader.uploadFile(file, function(fileIndex, fileObj, timeDiff) {
-    uploader.execute(function (error, data) {
-      if (error) {
-        console.log('uploadError', error);
-        throw error;
-      } else {
-        // `data` here is content of the file 
-      }
-    });
-  });
+    .then(doc => { console.log(doc); })
+    .catch(error => { console.log(error); throw error; });
 };
 
 /**
@@ -39,76 +32,61 @@ var filesToExtraFiles = function filesToExtraFiles(client, source, file, destina
  * @param {Object} file - Node.js Stream
  * @param {Object} remote - Nuxeo Document
  */
-var forceFileToDocument = function forceFileToDocument(client,
+const forceFileToDocument = function forceFileToDocument(nuxeo,
                                                        file,
                                                        remote) {
-  var options = { 'name': file.path };
-  var checkin = client.operation('Document.CheckIn')
-    .context({ currentDocument: remote })
-    .input('doc:' + remote.path)
-    .params({
-      version: 'major'
-    })
-    .execute(function(error, doc) {
-      if (error) { console.log(error); throw error; }
-      console.log(doc);
-      var uploader = client.operation('Blob.Attach')
-        .params({
-          document: doc,
-          save: true
+  // const options = { 'name': file.path };
+  nuxeo.operation('Document.CheckIn')
+    .input(remote)
+    .params({ version: 'major' })
+    .execute()
+    .then(doc => {
+      nuxeo.batchUpload()
+        .upload(file)
+        .then(res => {
+            return nuxeo.operation('Blob.Attach')
+              .params({
+                document: doc,
+                save: true
+              })
+              .input(res.blob)
+              .execute({ schemas: 'file'})
+              .then(res => { console.log(res.statusText); } );
         })
-        .uploader();
-      uploader.uploadFile(file, options, function(fileIndex, fileObj, timeDiff) {
-        uploader.execute(function (error, data) {
-          if (error) {
-            console.log('uploadError', error);
-            throw error;
-          } else {
-            // `data` here is content of the file
-          }
-        });
-      });
-    });
-}
+        .catch(error => {console.log(error); throw error; });
+    }).catch(function(error) { console.log(error); throw error; });
+};
 
 /**
  * create a new document at a specific path
- * @param {Object} client - Nuxeo Client
+ * @param {Object} nuxeo - Nuxeo Client
  * @param {string} source - path to the local file
  * @param {Object} file - Node.js Stream
  * @param {string} upload_folder - path on remote server
  */
-var fileToDirectory = function fileToDirectory(client, source, file, upload_folder){
-  var uploader = client.operation('FileManager.Import')
-                       .context({ currentDocument: upload_folder })
-                       .uploader();
-  var options = { 'name': file.filename };
-  var doc = uploader.uploadFile(file, options, function(fileIndex, fileObj, timeDiff) {
-    uploader.execute({
-      path: path.basename(source)
-    }, function (error, data) {
-      if (error) {
-        console.log('uploadError', error);
-        throw error;
-      } else {
-        console.log('upload', data);
-        var doc = client.document(data.entries[0]);
-        doc.set({'file:filename': file.filename });
-        doc.save(function(error, doc) {
-          if (error) { console.log(error); throw error; }
-          console.log('updated file:filename');
+const fileToDirectory = function fileToDirectory(nuxeo, source, file, upload_folder){
+  nuxeo.batchUpload()
+    .upload(file)
+    .then(function(res) {
+      return nuxeo.operation('FileManager.Import')
+        .context({ currentDocument: upload_folder })
+        .input(res.blob)
+        .execute({
+          schemas: ['file'],
+          path: path.basename(source)
         });
-      }
+    })
+    .then(function(doc) {
+      console.log(doc.properties['file:content']);
+    })
+    .catch(function(error) {
+      console.log(error);
+      throw error;
     });
-  });
 };
 
-var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
-  var check_url = 'path' + args.destination_document;
-  client.request(check_url).get(function(error, remote) {
-    if (error) { console.log(error); throw error; }
-    filesToExtraFiles(client, source, file, args.destination_document[0]);
-  });
+const uploadExtraFiles = function uploadExtraFiles(nuxeo, args, source, file) {
+  filesToExtraFiles(nuxeo, source, file, args.destination_document[0]);
 };
 
 /**
@@ -118,40 +96,42 @@ var uploadExtraFiles = function uploadExtraFiles(client, args, source, file) {
  * @param {string} source - path to the local file
  * @param {Object} file - Node.js Stream
  */
-var uploadFileToFolder = function uploadFileToFolder(client, args, source, file){
+const uploadFileToFolder = function uploadFileToFolder(client, args, source, file){
 
   // upload directory must exist
-  var check_url = 'path' + args.upload_folder;
-  client.request(check_url).get(function(error, remote) {
-    if (error) { throw error; }
+  const check_url = 'path' + args.upload_folder;
+  client.request(check_url).get().then(function(remote) {
 
     // upload directory must be Folderish
     if (remote.facets.indexOf('Folderish') >= 0){
 
       // does the file already exist on nuxeo?
-      var check2_url = 'path' + args.upload_folder.replace(/\/$/, '') + '/' + file.filename;
-      client.request(check2_url).get(function(error, remote) {
-        if (error) {
-          if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
-            // does not exist yet; upload away
-            fileToDirectory(client, source, file, args.upload_folder);
-          } else {
-            console.log(error);
-            throw error;
-          }
-        }
-        // file is on the server
-        else { 
+      const check2_url = 'path' + args.upload_folder.replace(/\/$/, '') + '/' + file.name;
+      client.request(check2_url)
+        .get()
+        .then(function(inner){
+          // file is on the server
           if (args.force) {
-            forceFileToDocument(client, file, remote);
+            return forceFileToDocument(client, file, inner);
           } else {
             console.log('file ' + check2_url  + ' exists on nuxeo; use `-f` to force');
           }
-        }
-      });
+        })
+        .catch(function(error) {
+          if (error.response.status === 404) {
+            // does not exist yet; upload away
+            return fileToDirectory(client, source, file, args.upload_folder);
+          }
+        });
     }
     // not Folderish
     else { throw new Error('destination ' + check_url + ' is not Folderish'); } 
+  }).catch(function(error) {
+    if (error.response.status === 404) {
+      console.log('`' + check_url + '` not found');
+    } else {
+      throw error;
+    }
   });
 };
 
@@ -163,14 +143,14 @@ var uploadFileToFolder = function uploadFileToFolder(client, args, source, file)
  * @param {string} source - path to the local file
  * @param {Object} file - Node.js stream
  */
-var uploadFileToFile = function uploadFileToFile(client, args, source, file){
+const uploadFileToFile = function uploadFileToFile(client, args, source, file){
 
-  var upload_folder = path.dirname(args.upload_document);
+  const upload_folder = path.dirname(args.upload_document);
   // change the file.filename to rename file on the move
   file.filename = path.basename(args.upload_document);
 
   // does the file already exist on nuxeo?
-  var check_url = 'path' + args.upload_document;
+  const check_url = 'path' + args.upload_document;
   client.request(check_url).get(function(error, remote) {
     if (error) {
       if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
@@ -196,11 +176,11 @@ var uploadFileToFile = function uploadFileToFile(client, args, source, file){
 /**
  * parse a path string into an array of parents
  */
-var parsePath = function parsePath(docpath){
+const parsePath = function parsePath(docpath){
   // clean up string and split into an array
   docpath = docpath.replace(/^\//,'').replace(/\/$/,'').split('/');
   // reduce the array into an array of parent paths
-  return _.reduce(docpath, function(result, n, z) {
+  return docpath.reduce(function(result, n, z) {
     // want to reduce to an array, it starts as a String
     if (result.constructor === String) {
       result = [ '/' + result ];
@@ -215,19 +195,20 @@ var parsePath = function parsePath(docpath){
  * @param {Object} client - Nuxeo Client
  * @param {Object} params - parameters to pass to {@code Document.Create}
  */
-var createDocument = function createDocument(client, params, input){
+const createDocument = function createDocument(client, params, input){
   return new Promise(function(resolve, reject){
     client.operation('Document.Create')
           .params(params)
           .input(input)
-          .execute(function(error, data, response) {
-            if (error) { reject(error); }
+          .execute()
+          .then(function(data) {
             resolve(data);
-          });
+          })
+          .catch(function(error) { reject(error); });
   });
 };
 
-var formatDocumentEntityType = function formatDocumentEntityType(json) {
+const formatDocumentEntityType = function formatDocumentEntityType(json) {
   console.log(json.uid + '\t' + json.type + '\t' + json.path );
 };
 
@@ -236,11 +217,11 @@ var formatDocumentEntityType = function formatDocumentEntityType(json) {
  * @param {Object} client - Nuxeo Client
  * @param {Object} args - parsed dict of command line arguments
  */
-var makeDocument = function makeDocument(client, pathin, type, force, parents){
+const makeDocument = function makeDocument(nuxeo, pathin, type, force, parents){
   // check if the document exists
-  var check_url = 'path' + pathin;
-  var input =  path.dirname(pathin);
-  var params = {
+  const check_url = 'path' + pathin;
+  const input =  path.dirname(pathin);
+  const params = {
     type: type,
     name: path.basename(pathin),
     properties: {
@@ -248,20 +229,19 @@ var makeDocument = function makeDocument(client, pathin, type, force, parents){
     }
   };
 
-  var request = client.request(check_url);
-  Promise.promisifyAll(request);
+  const request = nuxeo.request(check_url);
 
-  return request.getAsync().then(function(remote) {
+  return request.get().then(function() {
     // Folder is alread on the server
     if (force) {
-      return createDocument(client, params, input);
+      return createDocument(nuxeo, params, input);
     } else if (! parents){
       console.log(pathin + ' exists on nuxeo; use `-f` to force');
     }
   }).catch(function(error) {
-    if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
+    if (error.response.status === 404) {
       // does not exist yet; create it
-      return createDocument(client, params, input);
+      return createDocument(nuxeo, params, input);
     } else {
       console.log(error);
       throw error;
@@ -269,13 +249,12 @@ var makeDocument = function makeDocument(client, pathin, type, force, parents){
   });
 };
 
-
 /**
  * create parent directories
  */
-var makeParents = function makeParents(client, docpath, type, force){
+const makeParents = function makeParents(client, docpath, type, force){
   // https://github.com/petkaantonov/bluebird/issues/134
-  Promise.reduce(parsePath(docpath), function(memo, item) {
+  bluebird.reduce(parsePath(docpath), function(memo, item) {
     return makeDocument(client, item, type, force, true).then(function(res) {
       if (res) { console.log(res); }
     }).catch(function(error) {
@@ -290,34 +269,48 @@ var makeParents = function makeParents(client, docpath, type, force){
  * @param {Object} client - Nuxeo Client
  * @param {Object} args - parsed dict of command line arguments
  */
-var lsPath = function lsPath(client, path){
+const lsPath = function lsPath(nuxeo, path){
   // check path specific path
-  var check_url = 'path' + path;
-  client.request(check_url).get(function(error, remote) {
-    if (error) { console.log(error); throw error; }
-    formatDocumentEntityType(remote);
-  });
-  // check the path for childern
-  check_url = check_url.replace(/\/$/, '') + '/@children';
-  client.request(check_url).get(function(error, remote) {
-    if (error) { console.log(error); throw error; }
-    remote.entries.forEach(function(entry){
-      formatDocumentEntityType(entry);
+  const check_url = 'path' + path;
+  nuxeo.request(check_url)
+    .get()
+    .then(function(remote) {
+      formatDocumentEntityType(remote);
+    })
+    .catch(function(error){
+      console.log(error); throw error;
     });
-  });
+
+  // check the path for childern
+  const url = check_url.replace(/\/$/, '') + '/@children';
+  nuxeo.request(url)
+    .get()
+    .then(function(remote) {
+      remote.entries.forEach(function(entry){
+        formatDocumentEntityType(entry);
+      });
+    })
+    .catch(function(error){
+      console.log(error); throw error;
+    });
 };
 
-var nxql = function nxql(client, query){
-  client.request('query?query=' + encodeURIComponent(query))
-        .get(function(error, remote) {
-          if (error) { console.log(error); throw error; }
+const nxql = function nxql(nuxeo, query){
+  nuxeo.request()
+        .path('query')
+        .queryParams({'query': query})
+        .get()
+        .then(function(remote) {
           remote.entries.forEach(function(entry){
             formatDocumentEntityType(entry);
           });
+        })
+        .catch(function(error){
+          console.log(error); throw error;
         });
 };
 
-var mv_to_folder = function mv_to_folder(client, from, to){
+const mv_to_folder = function mv_to_folder(client, from, to){
   client.document(from)
     .fetch(function(error, doc) {
       if (error) { console.log(error); throw error; }
