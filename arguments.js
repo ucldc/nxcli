@@ -1,5 +1,5 @@
 'use strict';
-var packageJson = require('./package.json');
+const packageJson = require('./package.json');
 
 /* nx nuxeo command line
  * ---- command line argument parsing
@@ -8,8 +8,8 @@ var packageJson = require('./package.json');
  */
 
 exports.getArgs = function getArgs() {
-  var ArgumentParser = require('argparse').ArgumentParser;
-  var parser = new ArgumentParser({
+  const ArgumentParser = require('argparse').ArgumentParser;
+  const parser = new ArgumentParser({
     addHelp: true,
     description: packageJson.description,
     version: packageJson.version
@@ -27,18 +27,18 @@ exports.getArgs = function getArgs() {
     help: 'log level'
   });
 
-  var subparsers = parser.addSubparsers({
+  const subparsers = parser.addSubparsers({
     title: 'subcommands',
     dest: 'subcommand_name'
   });
 
   // nx upfile 
-  var upfile = subparsers.addParser('upfile', {
+  const upfile = subparsers.addParser('upfile', {
     addHelp: true,
     help: 'upload files to nuxeo'
   });
   upfile.addArgument( [ 'source_file' ], { nargs: '1' });
-  var updest = upfile.addMutuallyExclusiveGroup('upDest', {
+  const updest = upfile.addMutuallyExclusiveGroup('upDest', {
     addHelp: true,
     help: 'destination on nuxeo'
   });
@@ -50,7 +50,7 @@ exports.getArgs = function getArgs() {
   });
 
   // nx mkdoc
-  var mkdoc = subparsers.addParser('mkdoc', {
+  const mkdoc = subparsers.addParser('mkdoc', {
     addHelp: true,
     help: 'create a (Folderish) Document in Nuxeo'
   });
@@ -75,7 +75,7 @@ exports.getArgs = function getArgs() {
   // nx updir
 
   // nx ls
-  var ls = subparsers.addParser('ls', {
+  const ls = subparsers.addParser('ls', {
     addHelp: true,
     help: 'list remote path'
   });
@@ -84,8 +84,8 @@ exports.getArgs = function getArgs() {
     help: 'path to list'
   });
 
-  // nx nxql
-  var q = subparsers.addParser(['q'], {
+  // nx q
+  const q = subparsers.addParser(['q'], {
     addHelp: true,
     help: 'nxql query'
   });
@@ -95,7 +95,7 @@ exports.getArgs = function getArgs() {
   });
 
   // nx extrafile
-  var extrafile = subparsers.addParser(['extrafile'], {
+  const extrafile = subparsers.addParser(['extrafile'], {
     addHelp: true,
     help: 'upload extra files to `files:files`'
   });
@@ -106,14 +106,14 @@ exports.getArgs = function getArgs() {
   });
 
   // nx mv
-  var mv = subparsers.addParser(['mvdoc'], {
+  const mv = subparsers.addParser(['mvdoc'], {
     addHelp: true,
     help: 'move destination is Folderish document'
   });
   mv.addArgument( [ 'source_document' ], { nargs: '1' });
   mv.addArgument( [ 'destination_document' ], { nargs: '1' });
 
-  var args = parser.parseArgs();
+  const args = parser.parseArgs();
 
   // extra validation
   // argparse can check for a required mutually exclusive group
