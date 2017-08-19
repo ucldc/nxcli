@@ -18,7 +18,7 @@ needs a better package name
 
 ## notes on node
 
- * a `v0.10.x` version of `node` is required
+ * should work the the latest stable version of node.  For example `nvm install stable` if using `nvm`.
 
  * `npm link .` is very helpful during development
  * `npm install https://github.com/ucldc/nxcli/archive/master.tar.gz`

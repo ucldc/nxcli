@@ -39,6 +39,9 @@ function main() {
   const config_parsed = ini.parse(fs.readFileSync(config_file, 'utf-8'));
   const client_conf = config_parsed.rest_api;
   const auth_method = config_parsed.nuxeo_account.method || 'basic';
+  if (client_conf.baseURL.endsWith('uxeo/')) {
+    client_conf.baseURL = `${client_conf.baseURL}site`;
+  }
   // support either auth method
   if (auth_method === 'basic') {
     client_conf.auth = {
