@@ -311,17 +311,24 @@ const nxql = function nxql(nuxeo, query){
         });
 };
 
-const mv_to_folder = function mv_to_folder(client, from, to){
-  // TODO #151302605
-  client.document(from)
-    .fetch(function(error, doc) {
-      if (error) { console.log(error); throw error; }
-      doc.move({
-        target: to
-      }, function(error, doc) {
-        console.log('Successfully moved ' + doc.title + ', updated path: ' + doc.path);
-      });
-  });
+const mv_to_folder = function mv_to_folder(nuxeo, from, to){
+  return nuxeo.repository()
+    .fetch(from)
+    .then(function(doc) {
+      doc
+        .move(to)
+        .then(function(doc){
+          console.log('Successfully moved ' + doc.title + ', updated path: ' + doc.path);
+        })
+        .catch(function(error) {
+          console.log(error);
+          throw error;
+        });
+    })
+    .catch(function(error) {
+      console.log(error);
+      throw error;
+    });
 };
 
 module.exports = {
@@ -341,7 +348,7 @@ module.exports = {
 };
 
 
-/* Copyright © 2016, Regents of the University of California
+/* Copyright © 2017, Regents of the University of California
 
 All rights reserved.
 

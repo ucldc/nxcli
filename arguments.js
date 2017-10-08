@@ -111,7 +111,7 @@ exports.getArgs = function getArgs() {
     help: 'move destination is Folderish document'
   });
   mv.addArgument( [ 'source_document' ], { nargs: '1' });
-  mv.addArgument( [ 'destination_document' ], { nargs: '1' });
+  mv.addArgument( [ 'destination_document' ], { nargs: '1', help: '(folderish)' });
 
   const args = parser.parseArgs();
 
@@ -126,7 +126,7 @@ exports.getArgs = function getArgs() {
 
 };
 
-/* Copyright © 2016, Regents of the University of California
+/* Copyright © 2017, Regents of the University of California
 
 All rights reserved.
 
