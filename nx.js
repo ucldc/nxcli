@@ -146,30 +146,31 @@ const uploadFileToFolder = function uploadFileToFolder(client, args, source, fil
 const uploadFileToFile = function uploadFileToFile(client, args, source, file){
 
   const upload_folder = path.dirname(args.upload_document);
-  // change the file.filename to rename file on the move
-  file.filename = path.basename(args.upload_document);
+  // change the Blob.name to rename file on the move
+  file.name = path.basename(args.upload_document);
 
   // does the file already exist on nuxeo?
   const check_url = 'path' + args.upload_document;
-  client.request(check_url).get(function(error, remote) {
-    if (error) {
-      if (error.code === 'org.nuxeo.ecm.core.model.NoSuchDocumentException') {
-        // does not exist yet; upload away
-        fileToDirectory(client, source, file, upload_folder);
-      } else {
-        console.log(error);
-        throw error;
-      }
-    }
+
+  const request = client.request(check_url);
+
+  return request.get().then(function() {
     // file is on the server
-    else {
-      if (args.force) {
-        forceFileToDocument(client, file, remote);
-      } else {
-        console.log('file ' + check_url  + ' exists on nuxeo; use `-f` to force');
-      }
+    if (args.force) {
+      return forceFileToDocument(client, file, remote);
+    } else {
+      console.log('file ' + check_url  + ' exists on nuxeo; use `-f` to force');
+    }
+  }).catch(function(error) {
+    if (error.response.status === 404) {
+      // does not exist yet; upload away
+      return fileToDirectory(client, source, file, upload_folder);
+    } else {
+      console.log(error);
+      throw error;
     }
   });
+
 };
 
 
@@ -310,16 +311,24 @@ const nxql = function nxql(nuxeo, query){
         });
 };
 
-const mv_to_folder = function mv_to_folder(client, from, to){
-  client.document(from)
-    .fetch(function(error, doc) {
-      if (error) { console.log(error); throw error; }
-      doc.move({
-        target: to
-      }, function(error, doc) {
-        console.log('Successfully moved ' + doc.title + ', updated path: ' + doc.path);
-      });
-  });
+const mv_to_folder = function mv_to_folder(nuxeo, from, to){
+  return nuxeo.repository()
+    .fetch(from)
+    .then(function(doc) {
+      doc
+        .move(to)
+        .then(function(doc){
+          console.log('Successfully moved ' + doc.title + ', updated path: ' + doc.path);
+        })
+        .catch(function(error) {
+          console.log(error);
+          throw error;
+        });
+    })
+    .catch(function(error) {
+      console.log(error);
+      throw error;
+    });
 };
 
 module.exports = {
@@ -339,7 +348,7 @@ module.exports = {
 };
 
 
-/* Copyright © 2016, Regents of the University of California
+/* Copyright © 2017, Regents of the University of California
 
 All rights reserved.
 
