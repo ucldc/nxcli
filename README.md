@@ -50,6 +50,9 @@ needs a better package name
 
  * `npm link .` is very helpful during development
  * `npm install https://github.com/ucldc/nxcli/archive/master.tar.gz`
+ * if this error: 'nx: command not found' occurs when trying to run nx, try the following install:
+                                   
+       sudo npm install -g  https://github.com/ucldc/nxcli/archive/master.tar.gz
 
  * Writing Command Line Tools with Node
 01 March 2015 by Jack Franklin http://javascriptplayground.com/blog/2015/03/node-command-line-tool/
