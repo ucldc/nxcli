@@ -1,5 +1,33 @@
 quick utility to upload files to Nuxeo
 
+## installation
+
+In a node environment [with correct
+permission](https://docs.npmjs.com/getting-started/fixing-npm-permissions)
+you can install into the global node environment with 
+
+```
+npm -g install https://github.com/ucldc/nxcli/archive/master.tar.gz
+```
+
+Then you can run the `nx ...` commands.
+
+If you don't want to install into the global node_modules, recient 
+versions of `npm` ship with a `npx` utility.
+
+```
+npm install https://github.com/ucldc/nxcli/archive/master.tar.gz
+```
+
+Then you can run commans as `npx nx ...`.
+
+[`nvm`](https://github.com/creationix/nvm) can be used to maintain
+multiple node environments with different versions.
+
+
+## help
+
+
 ```
 nx --help
 nx upfile --help
@@ -30,6 +58,8 @@ needs a better package name
 
 ## rcfile
 
+uses the same rcfile as [pynux](https://github.com/ucldc/pynux), often in `~/.pynux`.
+
 ```ini
 [nuxeo_account]
 method = token
@@ -45,7 +75,4 @@ baseURL = http://localhost:8080/nuxeo/
 restPath = site/api/v1/
 automationPath = site/api/v1/automation/
 timeout = 3000
-
-[platform_importer]
-base = http://localhost:8080/nuxeo/site/fileImporter
 ```
