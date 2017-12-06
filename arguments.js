@@ -111,7 +111,7 @@ exports.getArgs = function getArgs() {
     help: 'move destination is Folderish document'
   });
   mv.addArgument( [ 'source_document' ], { nargs: '1' });
-  mv.addArgument( [ 'destination_document' ], { nargs: '1', help: '(folderish)' });
+  mv.addArgument( [ 'destination_folder_document' ], { nargs: '1', help: '(folderish)' });
 
   const args = parser.parseArgs();
 

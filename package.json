@@ -1,6 +1,6 @@
 {
   "name": "nx",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "nuxeo command line helper",
   "main": "index.js",
   "scripts": {
