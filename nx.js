@@ -154,10 +154,10 @@ const uploadFileToFile = function uploadFileToFile(client, args, source, file){
 
   const request = client.request(check_url);
 
-  return request.get().then(function() {
+  return request.get().then(function(inner) {
     // file is on the server
     if (args.force) {
-      return forceFileToDocument(client, file, remote);
+      return forceFileToDocument(client, file, inner);
     } else {
       console.log('file ' + check_url  + ' exists on nuxeo; use `-f` to force');
     }
