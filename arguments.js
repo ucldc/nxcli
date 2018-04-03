@@ -60,8 +60,8 @@ exports.getArgs = function getArgs() {
   });
   mkdoc.addArgument(['-t', '--type'], {
     action: 'store',
-    defaultValue: 'Folder',
-    help: 'Nuxeo Document Type (default: Folder)'
+    defaultValue: 'Organization',
+    help: 'Nuxeo Document Type (default: Organization -- this is the usual value for folder objects)'
   });
   mkdoc.addArgument( [ '-f', '--force' ], {
     action: 'storeTrue',
